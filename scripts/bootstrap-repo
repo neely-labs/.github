@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  printf '%s\n' \
+    'Usage: scripts/bootstrap-repo NAME [--description TEXT] [--tier experiment|maintained]' \
+    '' \
+    'Creates a private repository. Publication and ruleset activation are separate, explicit steps.'
+}
+
+repo_name=''
+repo_description=''
+tier='experiment'
+
+while (($#)); do
+  case "$1" in
+    --description)
+      repo_description="${2:?--description requires a value}"
+      shift 2
+      ;;
+    --tier)
+      tier="${2:?--tier requires a value}"
+      shift 2
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --*)
+      printf 'Unknown option: %s\n' "$1" >&2
+      usage >&2
+      exit 2
+      ;;
+    *)
+      if [[ -n "$repo_name" ]]; then
+        printf 'Only one repository name is allowed.\n' >&2
+        exit 2
+      fi
+      repo_name="$1"
+      shift
+      ;;
+  esac
+done
+
+[[ -n "$repo_name" ]] || { usage >&2; exit 2; }
+[[ "$tier" == experiment || "$tier" == maintained ]] || {
+  printf 'Tier must be experiment or maintained.\n' >&2
+  exit 2
+}
+
+full_name="neely-labs/$repo_name"
+create_args=(repo create "$full_name" --private --disable-wiki)
+[[ -z "$repo_description" ]] || create_args+=(--description "$repo_description")
+
+gh "${create_args[@]}"
+gh api --method PATCH "repos/$full_name" \
+  -F has_projects=false \
+  -F has_wiki=false \
+  -F has_discussions=false \
+  -F allow_merge_commit=false \
+  -F allow_squash_merge=true \
+  -F allow_rebase_merge=true \
+  -F delete_branch_on_merge=true >/dev/null
+
+printf '\nCreated %s privately with the %s publication target.\n' "$full_name" "$tier"
+printf '%s\n' \
+  'Before publication:' \
+  '  1. Complete docs/PUBLISHING_CHECKLIST.md.' \
+  '  2. Add scripts/ci and a PR Verify workflow.' \
+  '  3. Review third-party Actions and request allowlist additions.' \
+  '  4. Make the repository public intentionally.' \
+  "  5. Run scripts/apply-ruleset $full_name $tier after required checks exist."

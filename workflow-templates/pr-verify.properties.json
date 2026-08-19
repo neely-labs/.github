@@ -1,0 +1,6 @@
+{
+  "name": "PR Verify",
+  "description": "Stable required-check contract; the repository must provide scripts/ci.",
+  "iconName": "octicon-shield-check",
+  "categories": ["Continuous integration"]
+}

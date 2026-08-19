@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  printf '%s\n' 'Usage: scripts/apply-ruleset OWNER/REPO experiment|maintained'
+}
+
+full_name="${1:-}"
+tier="${2:-}"
+
+[[ "$full_name" == */* ]] || { usage >&2; exit 2; }
+[[ "$tier" == experiment || "$tier" == maintained ]] || {
+  usage >&2
+  exit 2
+}
+
+visibility="$(gh api "repos/$full_name" --jq '.visibility')"
+if [[ "$visibility" != public ]]; then
+  printf 'Refusing: GitHub Free supports this ruleset only after %s is public.\n' "$full_name" >&2
+  exit 1
+fi
+
+if [[ "$tier" == maintained ]]; then
+  default_branch="$(gh api "repos/$full_name" --jq '.default_branch')"
+  head_sha="$(gh api "repos/$full_name/commits/$default_branch" --jq '.sha')"
+  if ! gh api "repos/$full_name/commits/$head_sha/check-runs" \
+    --jq '.check_runs[].name' | grep -Fxq 'PR Verify'; then
+    printf 'Refusing: %s has not emitted a PR Verify check on %s.\n' \
+      "$full_name" "$default_branch" >&2
+    exit 1
+  fi
+fi
+
+gh api --method POST "repos/$full_name/rulesets" \
+  --input "rulesets/$tier.json" \
+  --jq '{id, name, enforcement}'
