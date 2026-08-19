@@ -20,6 +20,10 @@ org_json="$(gh api "orgs/$org")"
 actions_json="$(gh api "orgs/$org/actions/permissions")"
 workflow_json="$(gh api "orgs/$org/actions/permissions/workflow")"
 fork_json="$(gh api "orgs/$org/actions/permissions/fork-pr-contributor-approval")"
+selected_actions_json="$(gh api "orgs/$org/actions/permissions/selected-actions")"
+security_defaults_json="$(gh api "orgs/$org/code-security/configurations/defaults")"
+public_members_json="$(gh api "orgs/$org/public_members")"
+installations_json="$(gh api "orgs/$org/installations")"
 
 check 'display name' "$(jq -r '.name' <<<"$org_json")" 'Neely Labs'
 check 'company' "$(jq -r '.company' <<<"$org_json")" 'Neely Solutions LLC'
@@ -30,11 +34,26 @@ check 'member repository deletion' "$(jq -r '.members_can_delete_repositories' <
 check 'member visibility changes' "$(jq -r '.members_can_change_repo_visibility' <<<"$org_json")" 'false'
 check 'member outside invitations' "$(jq -r '.members_can_invite_outside_collaborators' <<<"$org_json")" 'false'
 check 'member team creation' "$(jq -r '.members_can_create_teams' <<<"$org_json")" 'false'
+check 'reader discussion creation' "$(jq -r '.readers_can_create_discussions' <<<"$org_json")" 'false'
+check 'repository Projects default' "$(jq -r '.has_repository_projects' <<<"$org_json")" 'false'
 check '2FA required' "$(jq -r '.two_factor_requirement_enabled' <<<"$org_json")" 'true'
+check 'owner membership public' \
+  "$(jq -r 'any(.[]; .login == "nick-neely")' <<<"$public_members_json")" 'true'
 check 'allowed Actions' "$(jq -r '.allowed_actions' <<<"$actions_json")" 'selected'
 check 'SHA pinning' "$(jq -r '.sha_pinning_required' <<<"$actions_json")" 'true'
+check 'GitHub-owned Actions' "$(jq -r '.github_owned_allowed' <<<"$selected_actions_json")" 'true'
+check 'verified Actions auto-allowed' "$(jq -r '.verified_allowed' <<<"$selected_actions_json")" 'false'
 check 'workflow token' "$(jq -r '.default_workflow_permissions' <<<"$workflow_json")" 'read'
 check 'workflow PR approval' "$(jq -r '.can_approve_pull_request_reviews' <<<"$workflow_json")" 'false'
 check 'external workflow approval' "$(jq -r '.approval_policy' <<<"$fork_json")" 'all_external_contributors'
+check 'public security default' \
+  "$(jq -r '.[] | select(.default_for_new_repos == "public") | .configuration.name' <<<"$security_defaults_json")" \
+  'Neely Labs public baseline'
+check 'private security default' \
+  "$(jq -r '.[] | select(.default_for_new_repos == "private_and_internal") | .configuration.name' <<<"$security_defaults_json")" \
+  'Neely Labs private baseline'
+check 'Blacksmith repository scope' \
+  "$(jq -r '.installations[] | select(.app_slug == "blacksmith-sh") | .repository_selection' <<<"$installations_json")" \
+  'selected'
 
 exit "$failed"
