@@ -6,7 +6,8 @@
 - [ ] README states purpose, maturity, installation, usage, and support status.
 - [ ] An explicit license is present and appropriate for the project.
 - [ ] Security policy and private vulnerability reporting are available.
-- [ ] Dependency graph, alerts, updates, scanning, and push protection are set.
+- [ ] Dependency graph, Dependabot alerts and security updates, and public secret scanning and push protection are set.
+- [ ] Private repositories keep paid GitHub Code Security and CodeQL disabled; templates do not add a CodeQL workflow. Free public scanning remains available.
 - [ ] `scripts/ci` and the `PR Verify` workflow pass on a pull request.
 - [ ] The experiment or maintained ruleset is active.
 - [ ] Merge methods, branch deletion, topics, and repository features are set.

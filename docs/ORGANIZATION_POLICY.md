@@ -44,6 +44,12 @@ Third-party Actions require explicit approval and immutable commit-SHA pins.
 The stable maintained-repository merge gate is named `PR Verify`; repository-
 specific deployment gates are added only after they exist and pass.
 
+Private repositories must not enable paid GitHub Code Security or CodeQL.
+Repository templates and bootstrap scripts must not add a CodeQL workflow or
+enable paid security products. A future change requires the owner's explicit
+approval. Keep free dependency graphs, Dependabot alerts and security updates.
+The public baseline retains free CodeQL, secret scanning, and push protection.
+
 ## Review cadence
 
 Review organization membership, third-party applications, Blacksmith repository

@@ -52,6 +52,12 @@ check 'public security default' \
 check 'private security default' \
   "$(jq -r '.[] | select(.default_for_new_repos == "private_and_internal") | .configuration.name' <<<"$security_defaults_json")" \
   'Neely Labs private baseline'
+check 'private Code Security disabled' \
+  "$(jq -r '.[] | select(.default_for_new_repos == "private_and_internal") | .configuration | (.code_security == "disabled" or (.code_security == null and (.advanced_security == "disabled" or .advanced_security == "secret_protection")))' <<<"$security_defaults_json")" \
+  'true'
+check 'private default CodeQL disabled' \
+  "$(jq -r '.[] | select(.default_for_new_repos == "private_and_internal") | .configuration.code_scanning_default_setup' <<<"$security_defaults_json")" \
+  'disabled'
 check 'Blacksmith repository scope' \
   "$(jq -r '.installations[] | select(.app_slug == "blacksmith-sh") | .repository_selection' <<<"$installations_json")" \
   'selected'
